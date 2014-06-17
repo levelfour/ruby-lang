@@ -6,6 +6,7 @@ module TOKEN
 	SUB = 1 # 減算
 	MUL = 2 # 乗算
 	DIV = 2 # 除算
+	MOD = 2 # 剰余
 	IMD = 1000 # 即値
 end
 
@@ -14,16 +15,19 @@ module OP
 		"+" => TOKEN::ADD,
 		"-" => TOKEN::SUB,
 		"*" => TOKEN::MUL,
-		"/" => TOKEN::DIV
+		"/" => TOKEN::DIV,
+		"%" => TOKEN::MOD,
 	}
 	PROC = {
 		"+" => Proc.new do |x, y| x + y end,
 		"-" => Proc.new do |x, y| x - y end,
 		"*" => Proc.new do |x, y| x * y end,
-		"/" => Proc.new do |x, y| x / y end
+		"/" => Proc.new do |x, y| x / y end,
+		"%" => Proc.new do |x, y| x % y end,
 	}
 end
 
+# 式木
 class Expr
 	def initialize(val = 0)
 		@val = val
@@ -38,6 +42,7 @@ class Expr
 	end
 end	
 
+# 式木のノード（二項演算子）
 class BinOpExpr < Expr
 	def initialize(op, left, right)
 		@op = op
