@@ -109,7 +109,13 @@ class Tokenizer
 
 	def _tokenize(tokens)
 		if tokens.length == 1
-			return Expr.new(tokens[0].s.to_i)
+			if tokens[0].type == :immidiate
+				if /^\d+\.\d+/ =~ tokens[0].s
+					return Expr.new(tokens[0].s.to_f)
+				elsif /^\d+/ =~ tokens[0].s
+					return Expr.new(tokens[0].s.to_i)
+				end
+			end
 		end
 		# トークン配列の中からrootになる要素（優先度min）を探す
 		# rはその要素の@tokensにおけるindex
@@ -134,8 +140,8 @@ def parse(s)
 	i = 0
 	token = Tokenizer.new
 	while i < s.length do
-		# 整数値
-		if /^\d+/ =~ s[i..s.length-1] 
+		# 実数値または整数値
+		if /^\d+\.\d+/ =~ s[i..s.length-1] || /^\d+/ =~ s[i..s.length-1] 
 			token << [$&, :immidiate]
 		# デリミタ
 		elsif /^\s+/ =~ s[i..s.length-1]
