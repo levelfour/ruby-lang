@@ -7,6 +7,7 @@ module TOKEN
 	MUL = 2 # 乗算
 	DIV = 2 # 除算
 	MOD = 2 # 剰余
+	POW = 3 # 累乗
 	IMD = 1000 # 即値
 end
 
@@ -17,6 +18,7 @@ module OP
 		"*" => TOKEN::MUL,
 		"/" => TOKEN::DIV,
 		"%" => TOKEN::MOD,
+		"^" => TOKEN::POW,
 	}
 	PROC = {
 		"+" => Proc.new do |x, y| x + y end,
@@ -24,6 +26,7 @@ module OP
 		"*" => Proc.new do |x, y| x * y end,
 		"/" => Proc.new do |x, y| x / y end,
 		"%" => Proc.new do |x, y| x % y end,
+		"^" => Proc.new do |x, y| x ** y end,
 	}
 end
 
