@@ -8,7 +8,14 @@ module TOKEN
 	DIV = 2 # 除算
 	MOD = 2 # 剰余
 	POW = 3 # 累乗
-	IMD = 1000 # 即値
+	IMMEDIATE = 1000 # 即値
+	IDENTIFIER = IMMEDIATE - 1 # 識別子
+
+	# 各トークンの正規表現パターン
+	PATTERN_INT			= /^\d+/
+	PATTERN_DOUBLE		= /^\d+\.\d+/
+	PATTERN_IDENTIFIER	= /^a/
+	PATTERN_SPACE		= /^\s+/
 end
 
 module OP
@@ -73,9 +80,11 @@ class Tokenizer
 			@type = type
 			case @type
 			when :immidiate # 即値
-				@priority = TOKEN::IMD
+				@priority = TOKEN::IMMEDIATE
 			when :operator # 演算子
 				@priority = OP::STR[@s]
+			when :identifier # 識別子
+				@priority = TOKEN::IDENTIFIER
 			end
 		end
 	end
@@ -109,12 +118,22 @@ class Tokenizer
 
 	def _tokenize(tokens)
 		if tokens.length == 1
+			# ASTの終端ノードが即値だった場合
 			if tokens[0].type == :immidiate
-				if /^\d+\.\d+/ =~ tokens[0].s
+				# 実数
+				if TOKEN::PATTERN_DOUBLE  =~ tokens[0].s
 					return Expr.new(tokens[0].s.to_f)
-				elsif /^\d+/ =~ tokens[0].s
+				# 整数
+				elsif TOKEN::PATTERN_INT =~ tokens[0].s
 					return Expr.new(tokens[0].s.to_i)
 				end
+			# ASTの終端ノードが識別子だった場合
+			elsif tokens[0].type == :identifier && TOKEN::PATTERN_IDENTIFIER =~ tokens[0].s
+				# 今の時点ではa:=100
+				# TODO: 変数の代入式の実装
+				return Expr.new(100)
+			else
+				raise SyntaxError, "#{__method__}: Invalid syntax `#{tokens[0].s}`"
 			end
 		end
 		# トークン配列の中からrootになる要素（優先度min）を探す
@@ -141,10 +160,14 @@ def parse(s)
 	token = Tokenizer.new
 	while i < s.length do
 		# 実数値または整数値
-		if /^\d+\.\d+/ =~ s[i..s.length-1] || /^\d+/ =~ s[i..s.length-1] 
+		if TOKEN::PATTERN_DOUBLE =~ s[i..s.length-1] || TOKEN::PATTERN_INT =~ s[i..s.length-1] 
 			token << [$&, :immidiate]
+		# 識別子（ひとまず"a"のみ許可）
+		# TODO: 任意の識別子を使用可能に
+		elsif TOKEN::PATTERN_IDENTIFIER =~ s[i..s.length-1]
+			token << [$&, :identifier]
 		# デリミタ
-		elsif /^\s+/ =~ s[i..s.length-1]
+		elsif TOKEN::PATTERN_SPACE =~ s[i..s.length-1]
 			# do nothing
 		else
 			# 演算子
@@ -158,7 +181,7 @@ def parse(s)
 			
 			# それ以外は例外
 			if !$&
-				raise SyntaxError, "Invalid token in `#{s}`"
+				raise SyntaxError, "#{__method__}: Invalid token in `#{s}`"
 			end
 		end
 		i += $&.length
