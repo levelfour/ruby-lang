@@ -18,7 +18,8 @@ module TOKEN
 	MOD = 2 # 剰余
 	POW = 3 # 累乗
 	IMMEDIATE = 1000 # 即値
-	IDENTIFIER = IMMEDIATE - 1 # 識別子
+	IDENTIFIER = IMMEDIATE.pred # 識別子
+	DELIMITER = IMMEDIATE.succ # デリミタ
 
 	# 各トークンの正規表現パターン
 	PATTERN_INT			= /^\d+/
@@ -59,6 +60,10 @@ module OP
 		"^" => Proc.new do |x, y| x ** y end,
 	}
 end
+
+DELIMITER = {
+	:paren => ["(", ")"],
+}
 
 # 式木
 class Expr
@@ -136,6 +141,8 @@ class Tokenizer
 				@priority = OP::STR[@s]
 			when :identifier # 識別子
 				@priority = TOKEN::IDENTIFIER
+			when :delimiter # デリミタ
+				@priority = TOKEN::DELIMITER
 			end
 		end
 	end
@@ -149,13 +156,28 @@ class Tokenizer
 	end
 
 	# delegate
-	def_delegators :@tokens, :[], :length
+	def_delegators :@tokens, :[], :length, :first, :last
 
 	# トークン配列の中からrootになる要素（優先度min）のインデックスを返す
 	# 優先度が同じトークンは後方検索
 	def root
-		r = @tokens.reverse.each_with_index.min_by { |t,i| t.priority }.last
-		@tokens.length - r - 1
+		lpi = @tokens.index {|t| t.s == DELIMITER[:paren][0] }
+		rpi = @tokens.rindex {|t| t.s == DELIMITER[:paren][1] }
+		if !lpi.nil? && !rpi.nil? && lpi < rpi
+			lpi = @tokens.length - lpi - 1
+			rpi = @tokens.length - rpi - 1
+			r = @tokens.reverse.each_with_index.min_by { |t,i|
+				t.priority + ((rpi <= i && i <= lpi) ? TOKEN::DELIMITER : 0)
+			}.last
+			@tokens.length - r - 1
+		elsif lpi.nil? && rpi.nil?
+			r = @tokens.reverse.each_with_index.min_by { |t,i|
+				t.priority
+			}.last
+			@tokens.length - r - 1
+		else
+			raise SyntaxError, "#{__method__}: Invalid parenthesis"
+		end
 	end
 
 	def tokenize
@@ -179,6 +201,8 @@ class Tokenizer
 			else
 				raise SyntaxError, "#{__method__}: Invalid syntax `#{tokens[0].s}`"
 			end
+		elsif tokens.first.s == DELIMITER[:paren][0] && tokens.last.s == DELIMITER[:paren][1]
+			tokens = Tokenizer.new(tokens[1..tokens.length-2])
 		end
 		# トークン配列の中からrootになる要素（優先度min）を探す
 		# rはその要素の@tokensにおけるindex
@@ -209,7 +233,7 @@ def parse(s)
 		# 識別子
 		elsif TOKEN::PATTERN_IDENTIFIER =~ s[i..s.length-1]
 			token << [$&, :identifier]
-		# デリミタ
+		# 空白
 		elsif TOKEN::PATTERN_SPACE =~ s[i..s.length-1]
 			# do nothing
 		else
@@ -219,6 +243,18 @@ def parse(s)
 				if re =~ s[i..s.length-1] 
 					token << [$&, :operator]
 					break
+				end
+			end
+
+			# デリミタ
+			if !$&
+				DELIMITER.each do |k,v|
+					re1 = /^#{Regexp.escape(v[0])}/
+					re2 = /^#{Regexp.escape(v[1])}/
+					if re1 =~ s[i..s.length-1] || re2 =~ s[i..s.length-1]
+						token << [$&, :delimiter]
+						break
+					end
 				end
 			end
 			
