@@ -45,19 +45,19 @@ module OP
 		"^" => TOKEN::POW,
 	}
 	PROC = {
-		"<-" => Proc.new do |x, y| x.substitute y end,
-		"=" => Proc.new do |x, y| x == y end,
-		"!=" => Proc.new do |x, y| x != y end,
-		"<" => Proc.new do |x, y| x < y end,
-		"<=" => Proc.new do |x, y| x <= y end,
-		">" => Proc.new do |x, y| x > y end,
-		">=" => Proc.new do |x, y| x >= y end,
-		"+" => Proc.new do |x, y| x + y end,
-		"-" => Proc.new do |x, y| x - y end,
-		"*" => Proc.new do |x, y| x * y end,
-		"/" => Proc.new do |x, y| x / y end,
-		"%" => Proc.new do |x, y| x % y end,
-		"^" => Proc.new do |x, y| x ** y end,
+		"<-" => lambda { |x, y| x.substitute y },
+		"=" => lambda { |x, y| x == y },
+		"!=" => lambda { |x, y| x != y },
+		"<" => lambda { |x, y| x < y },
+		"<=" => lambda { |x, y| x <= y },
+		">" => lambda { |x, y| x > y },
+		">=" => lambda { |x, y| x >= y },
+		"+" => lambda { |x, y| x + y },
+		"-" => lambda { |x, y| x - y },
+		"*" => lambda { |x, y| x * y },
+		"/" => lambda { |x, y| x / y },
+		"%" => lambda { |x, y| x % y },
+		"^" => lambda { |x, y| x ** y },
 	}
 end
 
