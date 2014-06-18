@@ -45,7 +45,7 @@ module OP
 		"^" => TOKEN::POW,
 	}
 	PROC = {
-		"<-" => lambda { |x, y| x.substitute y },
+		"<-" => lambda { |env, x, y| x.substitute env, y },
 		"=" => lambda { |x, y| x == y },
 		"!=" => lambda { |x, y| x != y },
 		"<" => lambda { |x, y| x < y },
@@ -71,7 +71,7 @@ class Expr
 		@val = val
 	end
 
-	def evaluate
+	def evaluate(env)
 		@val
 	end
 
@@ -82,17 +82,28 @@ end
 
 # 式木のノード（変数）
 class VarExpr < Expr
+	attr_reader :name, :val
+
 	def initialize(s, val)
-		@s = s
+		@name = s
 		@val = val
 	end
 
-	def substitute(val)
+	def evaluate(env)
+		if env.key? @name
+			return env[@name].val
+		else
+			return @val
+		end
+	end
+
+	def substitute(env, val)
 		@val = val
+		env << self
 	end
 
 	def inspect
-		"VarExpr(#{@s} = #{@val})"
+		"VarExpr(#{@name} = #{@val})"
 	end
 end
 
@@ -105,17 +116,17 @@ class BinOpExpr < Expr
 		@right = right
 	end
 
-	def evaluate
+	def evaluate(env)
 		# 演算子に相当するプロシージャ(OP::PROC[@op])を呼ぶ
 		if @op == "<-"
 			# 代入式は左辺値が変数であることを確認
 			if @left.kind_of?(VarExpr)
-				OP::PROC[@op].call(@left, @right.evaluate)
+				OP::PROC[@op].call(env, @left, @right.evaluate(env))
 			else 
 				raise SyntaxError, "#{__method__}: lvalue must be variable"
 			end
 		else
-			OP::PROC[@op].call(@left.evaluate, @right.evaluate)
+			OP::PROC[@op].call(@left.evaluate(env), @right.evaluate(env))
 		end
 	end
 
@@ -228,6 +239,24 @@ class Tokenizer
 	end
 end
 
+# 環境（スコープ）
+class Environment
+	extend Forwardable
+	def_delegators :@vars, :key?, :[]
+
+	def initialize
+		@vars = {}	# 識別子と変数のハッシュ
+	end
+
+	def <<(var)
+		if var.kind_of?(VarExpr)
+			@vars[var.name] = var
+		else
+			raise "#{__method__}: wrong arg (expected VarExpr)"
+		end
+	end
+end
+
 # 文字列sをパースする
 def parse(s)
 	i = 0
@@ -276,15 +305,17 @@ end
 
 # main-loop
 begin
+	global_env = Environment.new	# グローバルスコープ
 	print ">>> "
 	while s = gets.chomp! do
 		if s.empty?
 			print ">>> "
 			next
 		end
-		token = parse(s)				# 字句解析
-		tree = token.tokenize			# 構文解析
-		print "=> #{tree.evaluate}\n"	# 式木の評価
+		token = parse(s)		# 字句解析
+		tree = token.tokenize	# 構文解析
+		# ASTの評価
+		print "=> #{tree.evaluate(global_env)}\n"
 		print ">>> "
 	end
 rescue Interrupt => e
