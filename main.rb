@@ -2,6 +2,7 @@
 # coding: utf-8
 
 module TOKEN
+	SBT = 0 # 代入
 	ADD = 1 # 加算
 	SUB = 1 # 減算
 	MUL = 2 # 乗算
@@ -20,6 +21,7 @@ end
 
 module OP
 	STR = {
+		"<-" => TOKEN::SBT,
 		"+" => TOKEN::ADD,
 		"-" => TOKEN::SUB,
 		"*" => TOKEN::MUL,
@@ -28,6 +30,7 @@ module OP
 		"^" => TOKEN::POW,
 	}
 	PROC = {
+		"<-" => Proc.new do |x, y| x.substitute y end,
 		"+" => Proc.new do |x, y| x + y end,
 		"-" => Proc.new do |x, y| x - y end,
 		"*" => Proc.new do |x, y| x * y end,
@@ -43,7 +46,7 @@ class Expr
 		@val = val
 	end
 
-	def eval
+	def evaluate
 		@val
 	end
 
@@ -51,6 +54,23 @@ class Expr
 		"Expr(#{@val})"
 	end
 end	
+
+# 式木のノード（変数）
+class VarExpr < Expr
+	def initialize(s, val)
+		@s = s
+		@val = val
+	end
+
+	def substitute(val)
+		@val = val
+	end
+
+	def inspect
+		"VarExpr(#{@s} = #{@val})"
+	end
+end
+
 
 # 式木のノード（二項演算子）
 class BinOpExpr < Expr
@@ -60,9 +80,18 @@ class BinOpExpr < Expr
 		@right = right
 	end
 
-	def eval
+	def evaluate
 		# 演算子に相当するプロシージャ(OP::PROC[@op])を呼ぶ
-		OP::PROC[@op].call(@left.eval, @right.eval)
+		if @op == "<-"
+			# 代入式は左辺値が変数であることを確認
+			if @left.kind_of?(VarExpr)
+				OP::PROC[@op].call(@left, @right.evaluate)
+			else 
+				raise SyntaxError, "#{__method__}: lvalue must be variable"
+			end
+		else
+			OP::PROC[@op].call(@left.evaluate, @right.evaluate)
+		end
 	end
 
 	def inspect
@@ -129,9 +158,7 @@ class Tokenizer
 				end
 			# ASTの終端ノードが識別子だった場合
 			elsif tokens[0].type == :identifier && TOKEN::PATTERN_IDENTIFIER =~ tokens[0].s
-				# 今の時点ではa:=100
-				# TODO: 変数の代入式の実装
-				return Expr.new(100)
+				return VarExpr.new($&, 0)
 			else
 				raise SyntaxError, "#{__method__}: Invalid syntax `#{tokens[0].s}`"
 			end
@@ -199,7 +226,7 @@ begin
 		end
 		token = parse(s)
 		tree = token.tokenize
-		p tree.eval
+		print "=> #{tree.evaluate}\n"
 		print ">>> "
 	end
 rescue Interrupt => e
