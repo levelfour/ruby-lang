@@ -3,6 +3,12 @@
 
 module TOKEN
 	SBT = 0 # 代入
+	EQL = 0 # 比較
+	NEQ = 0 # 比較(NOT EQUAL)
+	LES = 0 # <
+	LEQ = 0 # <=
+	GRT = 0 # >
+	GEQ = 0 # >=
 	ADD = 1 # 加算
 	SUB = 1 # 減算
 	MUL = 2 # 乗算
@@ -22,6 +28,12 @@ end
 module OP
 	STR = {
 		"<-" => TOKEN::SBT,
+		"=" => TOKEN::EQL,
+		"!=" => TOKEN::NEQ,
+		"<=" => TOKEN::LEQ,
+		"<" => TOKEN::LES,
+		">=" => TOKEN::GEQ,
+		">" => TOKEN::GRT,
 		"+" => TOKEN::ADD,
 		"-" => TOKEN::SUB,
 		"*" => TOKEN::MUL,
@@ -31,6 +43,12 @@ module OP
 	}
 	PROC = {
 		"<-" => Proc.new do |x, y| x.substitute y end,
+		"=" => Proc.new do |x, y| x == y end,
+		"!=" => Proc.new do |x, y| x != y end,
+		"<" => Proc.new do |x, y| x < y end,
+		"<=" => Proc.new do |x, y| x <= y end,
+		">" => Proc.new do |x, y| x > y end,
+		">=" => Proc.new do |x, y| x >= y end,
 		"+" => Proc.new do |x, y| x + y end,
 		"-" => Proc.new do |x, y| x - y end,
 		"*" => Proc.new do |x, y| x * y end,
