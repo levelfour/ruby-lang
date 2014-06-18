@@ -1,6 +1,8 @@
 #!/usr/bin/env ruby
 # coding: utf-8
 
+require 'forwardable'
+
 module TOKEN
 	SBT = 0 # 代入
 	EQL = 0 # 比較
@@ -120,6 +122,8 @@ end
 # トークナイザ
 #   Tokenizer << [token_str, token_type] の形でトークンを追加する
 class Tokenizer
+	extend Forwardable
+
 	class Token
 		attr_reader :s, :type, :priority
 		def initialize(s, type)
@@ -144,9 +148,8 @@ class Tokenizer
 		@tokens << Token.new(tok[0], tok[1])
 	end
 
-	def method_missing(name, *args)
-		@tokens.send name, *args
-	end
+	# delegate
+	def_delegators :@tokens, :[], :length
 
 	# トークン配列の中からrootになる要素（優先度min）のインデックスを返す
 	# 優先度が同じトークンは後方検索
