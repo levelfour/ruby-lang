@@ -189,8 +189,7 @@ def parse(s)
 		# 実数値または整数値
 		if TOKEN::PATTERN_DOUBLE =~ s[i..s.length-1] || TOKEN::PATTERN_INT =~ s[i..s.length-1] 
 			token << [$&, :immidiate]
-		# 識別子（ひとまず"a"のみ許可）
-		# TODO: 任意の識別子を使用可能に
+		# 識別子
 		elsif TOKEN::PATTERN_IDENTIFIER =~ s[i..s.length-1]
 			token << [$&, :identifier]
 		# デリミタ
@@ -224,9 +223,9 @@ begin
 			print ">>> "
 			next
 		end
-		token = parse(s)
-		tree = token.tokenize
-		print "=> #{tree.evaluate}\n"
+		token = parse(s)				# 字句解析
+		tree = token.tokenize			# 構文解析
+		print "=> #{tree.evaluate}\n"	# 式木の評価
 		print ">>> "
 	end
 rescue Interrupt => e
