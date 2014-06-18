@@ -305,19 +305,25 @@ end
 
 # main-loop
 begin
+	# ファイル指定がある場合はファイルをソースに
+	# それ以外の場合は標準入力をソースに
+	source = ARGV.length >= 1 ? File.new(ARGV[0]) : STDIN
 	global_env = Environment.new	# グローバルスコープ
-	print ">>> "
-	while s = gets.chomp! do
+	print ">>> " if source == STDIN
+	while s = gets do
+		s.chomp!
 		if s.empty?
-			print ">>> "
+			print ">>> " if source == STDIN
 			next
 		end
 		token = parse(s)		# 字句解析
 		tree = token.tokenize	# 構文解析
 		# ASTの評価
-		print "=> #{tree.evaluate(global_env)}\n"
-		print ">>> "
+		print "=> " if source == STDIN
+		print "#{tree.evaluate(global_env)}\n"
+		print ">>> " if source == STDIN
 	end
+	print "\n" if source = STDIN
 rescue Interrupt => e
 	print "\nbye\n"
 rescue SyntaxError => e
