@@ -15,7 +15,7 @@ module TOKEN
 	# 各トークンの正規表現パターン
 	PATTERN_INT			= /^\d+/
 	PATTERN_DOUBLE		= /^\d+\.\d+/
-	PATTERN_IDENTIFIER	= /^a/
+	PATTERN_IDENTIFIER	= /^[A-Za-z][A-Za-z0-9]*/
 	PATTERN_SPACE		= /^\s+/
 end
 
