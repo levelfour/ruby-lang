@@ -161,21 +161,27 @@ class Tokenizer
 	# トークン配列の中からrootになる要素（優先度min）のインデックスを返す
 	# 優先度が同じトークンは後方検索
 	def root
+		# トークン配列にカッコがあればその位置を調べる
 		lpi = @tokens.index {|t| t.s == DELIMITER[:paren][0] }
 		rpi = @tokens.rindex {|t| t.s == DELIMITER[:paren][1] }
 		if !lpi.nil? && !rpi.nil? && lpi < rpi
+			# カッコがあり左カッコと右カッコの位置が正しい場合
+			# トークン配列をreverseすることに注意する
 			lpi = @tokens.length - lpi - 1
 			rpi = @tokens.length - rpi - 1
 			r = @tokens.reverse.each_with_index.min_by { |t,i|
+				# カッコ内のトークンは優先度を上げる
 				t.priority + ((rpi <= i && i <= lpi) ? TOKEN::DELIMITER : 0)
 			}.last
 			@tokens.length - r - 1
 		elsif lpi.nil? && rpi.nil?
+			# カッコがない場合
 			r = @tokens.reverse.each_with_index.min_by { |t,i|
 				t.priority
 			}.last
 			@tokens.length - r - 1
 		else
+			# カッコの位置が不正な場合
 			raise SyntaxError, "#{__method__}: Invalid parenthesis"
 		end
 	end
