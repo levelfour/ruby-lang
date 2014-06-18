@@ -144,12 +144,8 @@ class Tokenizer
 		@tokens << Token.new(tok[0], tok[1])
 	end
 
-	def [](index)
-		@tokens[index]
-	end
-
-	def length
-		@tokens.length
+	def method_missing(name, *args)
+		@tokens.send name, *args
 	end
 
 	# トークン配列の中からrootになる要素（優先度min）のインデックスを返す
